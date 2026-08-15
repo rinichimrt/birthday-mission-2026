@@ -1,0 +1,706 @@
+/* ============================================================
+   Birthday Mission 2026 — Dragon Quest Style (Premium Edition)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+:root {
+    --bg-dark:    #0a0a12;
+    --bg-deep:    #050510;
+    --rpg-border: #c8c8d0;
+    --rpg-border-inner: #8888a0;
+    --text-main:  #f0f0f0;
+    --text-highlight: #ffd700;
+    --text-dim:   #888898;
+    --accent-red: #cc3333;
+    --accent-blue: #3366cc;
+    --window-bg:  rgba(8, 8, 24, 0.95);
+    
+    --font-pixel: 'DotGothic16', monospace, sans-serif;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--text-main);
+    font-family: var(--font-pixel);
+    -webkit-tap-highlight-color: transparent;
+    line-height: 1.7;
+}
+
+/* ============================================================
+   CRT SCANLINE OVERLAY — ブラウン管テレビ風のスキャンライン
+   ============================================================ */
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.06) 0px,
+        rgba(0, 0, 0, 0.06) 1px,
+        transparent 1px,
+        transparent 3px
+    );
+    mix-blend-mode: multiply;
+}
+
+/* ============================================================
+   RPG COMMAND WINDOW — 二重枠線のコマンドウィンドウ
+   ============================================================ */
+.rpg-window {
+    background: var(--window-bg);
+    border: 3px solid var(--rpg-border);
+    outline: 2px solid var(--rpg-border-inner);
+    outline-offset: -6px;
+    border-radius: 4px;
+    color: var(--text-main);
+    padding: 16px 20px;
+    position: relative;
+}
+
+/* コマンド選択項目（リスト） */
+.dq-cmd-item {
+    position: relative;
+    padding-left: 28px;
+    cursor: pointer;
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+    user-select: none;
+    transition: color 0.15s, text-shadow 0.15s;
+    letter-spacing: 1px;
+}
+.dq-cmd-item:hover {
+    color: var(--text-highlight);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+/* ホバー時に ▶ カーソルを表示 */
+.dq-cmd-item:hover::before, .dq-cmd-item:active::before {
+    content: '▶';
+    position: absolute;
+    left: 4px;
+    top: 0;
+    color: var(--text-highlight);
+    animation: cursorBlink 0.6s steps(2, start) infinite;
+    text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes cursorBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.mt-4 { margin-top: 16px; }
+
+#app {
+    position: relative;
+    width: 100%; height: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    z-index: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+.screen.active {
+    opacity: 1;
+    pointer-events: auto;
+    animation: screenFadeIn 0.5s ease-out;
+}
+
+@keyframes screenFadeIn {
+    from { opacity: 0; transform: scale(0.98); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================================
+   MAP SCREEN — ドラクエ風ワールドマップ（夜空バージョン）
+   ============================================================ */
+#screen-menu {
+    padding: 12px 20px;
+    gap: 12px;
+}
+
+.menu-header {
+    text-align: center;
+    margin: 0 auto;
+    width: 92%;
+    max-width: 700px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-shrink: 0;
+}
+.title-decoration {
+    font-size: 1.8rem;
+    animation: floatSlow 3s ease-in-out infinite alternate;
+}
+.title-decoration:last-child {
+    animation-delay: 1.5s;
+}
+@keyframes floatSlow {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-6px); }
+}
+
+.main-title {
+    font-size: 2.2rem;
+    letter-spacing: 4px;
+    color: var(--text-highlight);
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.3),
+        0 2px 0 #b8860b;
+    animation: titlePulse 4s ease-in-out infinite;
+}
+@keyframes titlePulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.3), 0 2px 0 #b8860b; }
+    50%      { text-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 2px 0 #b8860b; }
+}
+
+.tagline {
+    font-size: 1rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+}
+
+/* Map Container — 夜のフィールド */
+.map-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    /* 暗い森の背景グラデーション */
+    background: linear-gradient(
+        180deg,
+        #0a0a20 0%,
+        #0d1a0d 40%,
+        #0a200a 60%,
+        #152015 100%
+    );
+    border: 3px solid var(--rpg-border);
+    outline: 2px solid var(--rpg-border-inner);
+    outline-offset: -6px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Animated Stars */
+.map-sky {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.star {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    animation: starTwinkle 2s ease-in-out infinite alternate;
+}
+@keyframes starTwinkle {
+    0%   { opacity: 0.2; transform: scale(0.8); }
+    50%  { opacity: 1;   transform: scale(1.2); }
+    100% { opacity: 0.3; transform: scale(0.9); }
+}
+
+/* 道しるべの線 */
+.map-paths {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+.map-line-shadow {
+    fill: none;
+    stroke: #1a0a00;
+    stroke-width: 22;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    opacity: 0.6;
+}
+.map-line {
+    fill: none;
+    stroke: #6b3a1a;
+    stroke-width: 16;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+.map-line-detail {
+    fill: none;
+    stroke: #8b5a2a;
+    stroke-width: 2;
+    stroke-dasharray: 8 12;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    opacity: 0.6;
+}
+
+/* Map Nodes */
+.map-node {
+    position: absolute;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.map-node:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* ノードの光の輪 */
+.node-glow {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -65%);
+    background: radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.boss-glow {
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(200,50,50,0.2) 0%, transparent 70%);
+}
+
+/* 街や洞窟のアイコン風 */
+.node-icon {
+    width: 48px; height: 48px;
+    background: var(--bg-dark);
+    border: 3px solid var(--rpg-border);
+    outline: 1px solid var(--rpg-border-inner);
+    outline-offset: -5px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.5rem;
+    color: #fff;
+    border-radius: 4px;
+    position: relative;
+    z-index: 1;
+}
+.node-label {
+    margin-top: 6px;
+    background: var(--window-bg);
+    padding: 3px 10px;
+    border: 2px solid var(--rpg-border);
+    font-size: 0.9rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    border-radius: 2px;
+    letter-spacing: 1px;
+}
+
+/* Node States */
+.map-node[data-state="locked"] {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: grayscale(100%) brightness(0.5);
+}
+.map-node[data-state="unlocked"] .node-glow {
+    opacity: 1;
+    animation: glowPulse 2s ease-in-out infinite;
+}
+.map-node[data-state="unlocked"] .node-icon {
+    border-color: var(--text-highlight);
+    animation: nodeFloat 2s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+.map-node[data-state="cleared"] .node-icon {
+    background: #1a1a2a;
+    border-color: #555;
+    box-shadow: none;
+}
+.map-node[data-state="cleared"] .node-label {
+    color: var(--text-dim);
+}
+
+.boss-node .node-icon {
+    width: 64px; height: 64px;
+    font-size: 2.2rem;
+}
+
+@keyframes nodeFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+}
+@keyframes glowPulse {
+    0%, 100% { opacity: 0.5; transform: translate(-50%, -65%) scale(1); }
+    50%      { opacity: 1;   transform: translate(-50%, -65%) scale(1.3); }
+}
+
+/* Player Avatar (勇者) */
+.player-avatar {
+    position: absolute;
+    z-index: 3;
+    width: 42px; height: 42px;
+    background: var(--bg-dark);
+    border: 2px solid var(--text-highlight);
+    color: var(--text-highlight);
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transform: translate(-50%, -110%);
+    transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    border-radius: 4px;
+    box-shadow:
+        0 0 8px rgba(255, 215, 0, 0.4),
+        inset 0 0 4px rgba(255, 215, 0, 0.1);
+    animation: avatarBob 1.5s ease-in-out infinite;
+}
+.avatar-char {
+    animation: avatarBob 1.5s ease-in-out infinite;
+}
+@keyframes avatarBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+}
+
+/* Status Bar */
+.status-bar {
+    flex-shrink: 0;
+    margin: 0 auto;
+    width: 92%;
+    max-width: 1000px;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 24px;
+    font-size: 1rem;
+    letter-spacing: 1px;
+}
+
+/* ============================================================
+   GAME SCREEN
+   ============================================================ */
+#screen-game {
+    padding: 16px 20px;
+    gap: 12px;
+}
+.game-topbar {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    flex-shrink: 0; gap: 16px;
+}
+.header-window {
+    flex: 1;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.command-window {
+    min-width: 140px;
+}
+.small-cmd { padding: 12px 16px; }
+
+.game-title-bar {
+    font-size: 1.4rem;
+    color: var(--text-highlight);
+    letter-spacing: 2px;
+}
+.game-score-bar {
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+}
+
+.game-area {
+    position: relative; flex: 1; overflow: hidden;
+    display: flex; justify-content: center; align-items: center; padding: 4px;
+}
+#game-canvas {
+    display: block;
+    image-rendering: pixelated;
+    border-radius: 2px;
+}
+
+.message-window {
+    min-height: 90px;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+.ctrl-hint {
+    color: var(--text-main);
+    letter-spacing: 1px;
+}
+
+/* ============================================================
+   QUIZ SCREEN (STAGE 4)
+   ============================================================ */
+.quiz-layout {
+    display: flex; flex-direction: column; gap: 16px;
+    width: 100%; max-width: 800px; margin: 0 auto;
+    padding: 20px;
+    height: 100%;
+}
+.boss-graphic {
+    flex: 1;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 6rem;
+    position: relative;
+}
+.boss-emoji {
+    position: relative;
+    z-index: 1;
+    animation: bossIdle 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(200, 50, 50, 0.5));
+}
+@keyframes bossIdle {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-12px) scale(1.05); }
+}
+
+.boss-aura {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200, 30, 30, 0.2) 0%, transparent 70%);
+    animation: auraPulse 2s ease-in-out infinite;
+}
+@keyframes auraPulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.5); opacity: 0.8; }
+}
+
+.quiz-question-window {
+    font-size: 1.4rem;
+    min-height: 110px;
+    letter-spacing: 1px;
+}
+.quiz-choices-window {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    padding: 20px 24px;
+}
+.quiz-choices-window .dq-cmd-item {
+    font-size: 1.3rem;
+}
+
+/* ============================================================
+   OVERLAYS
+   ============================================================ */
+.overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; justify-content: center; align-items: center;
+    background: rgba(0, 0, 0, 0);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.4s, background 0.4s;
+}
+.overlay.active {
+    opacity: 1; pointer-events: auto;
+    background: rgba(0, 0, 0, 0.88);
+}
+
+.overlay-msg {
+    width: 90%; max-width: 620px;
+    font-size: 1.4rem;
+    line-height: 2;
+    animation: overlaySlideIn 0.4s ease-out;
+    letter-spacing: 1px;
+}
+@keyframes overlaySlideIn {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Clear Window */
+.clear-window {
+    text-align: center;
+}
+.clear-fanfare {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    animation: fanfareBounce 0.6s ease-out;
+}
+@keyframes fanfareBounce {
+    0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+    60%  { transform: scale(1.3) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.cmd-list {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-top: 20px; margin-left: 24px;
+}
+.center-cmd {
+    text-align: center;
+    display: inline-block;
+    padding-left: 0;
+}
+.center-cmd::before {
+    left: -24px;
+}
+
+/* Game Over */
+.gameover-window {
+    text-align: center;
+}
+.gameover-title {
+    font-size: 2.4rem;
+    color: var(--accent-red);
+    letter-spacing: 6px;
+    margin-bottom: 16px;
+    text-shadow: 0 0 20px rgba(200, 50, 50, 0.5);
+    animation: gameoverFlash 1s ease-out;
+}
+@keyframes gameoverFlash {
+    0%   { opacity: 0; transform: scale(2); }
+    30%  { opacity: 1; transform: scale(0.9); }
+    50%  { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.gameover-window .cmd-list {
+    text-align: left;
+}
+
+/* ============================================================
+   GRAND REVEAL — 宝箱の演出
+   ============================================================ */
+.grand-overlay.active {
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.grand-reveal-msg {
+    text-align: center;
+    max-width: 650px;
+    width: 90%;
+}
+.chest-animation-container {
+    height: 140px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+.chest-light {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
+    transition: width 1s, height 1s;
+    pointer-events: none;
+}
+.chest-light.active {
+    width: 300px;
+    height: 300px;
+}
+.treasure-chest {
+    font-size: 5rem;
+    transition: transform 0.3s;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+.chest-shake {
+    animation: chestShake 0.4s infinite;
+}
+
+.complete-code {
+    display: flex; justify-content: center; gap: 16px;
+    margin-top: 28px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 1s ease-out, transform 1s ease-out;
+}
+.complete-code.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+.cdigit {
+    width: 72px; height: 92px;
+    background: var(--bg-dark);
+    border: 3px solid var(--text-highlight);
+    outline: 1px solid rgba(255, 215, 0, 0.3);
+    outline-offset: -6px;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 2.8rem;
+    color: var(--text-highlight);
+    border-radius: 4px;
+    text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+    animation: digitReveal 0.6s ease-out backwards;
+}
+.cdigit:nth-child(1) { animation-delay: 0.1s; }
+.cdigit:nth-child(2) { animation-delay: 0.3s; }
+.cdigit:nth-child(3) { animation-delay: 0.5s; }
+.cdigit:nth-child(4) { animation-delay: 0.7s; }
+
+@keyframes digitReveal {
+    from { transform: rotateY(90deg) scale(0.5); opacity: 0; }
+    to   { transform: rotateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes chestShake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    20%  { transform: translateX(-8px) rotate(-8deg); }
+    40%  { transform: translateX(8px) rotate(8deg); }
+    60%  { transform: translateX(-6px) rotate(-6deg); }
+    80%  { transform: translateX(6px) rotate(6deg); }
+}
+
+/* Grand Reveal Particle Effects */
+.grand-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+.g-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    animation: particleRise 3s ease-out forwards;
+}
+@keyframes particleRise {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-200px) scale(0); }
+}
+
+/* ============================================================
+   TYPEWRITER TEXT ANIMATION
+   ============================================================ */
+.typewriter {
+    overflow: hidden;
+    border-right: 2px solid var(--text-main);
+    white-space: nowrap;
+    animation: typing 2s steps(30, end), blinkCaret 0.75s step-end infinite;
+}
+@keyframes typing {
+    from { width: 0; }
+    to   { width: 100%; }
+}
+@keyframes blinkCaret {
+    from, to { border-color: transparent; }
+    50%      { border-color: var(--text-main); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+    .quiz-choices-window { grid-template-columns: 1fr; }
+    .cdigit { width: 56px; height: 72px; font-size: 2.2rem; }
+    .main-title { font-size: 1.6rem; letter-spacing: 2px; }
+    .menu-header { padding: 10px 12px; }
+}

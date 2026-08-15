@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RPG Birthday Mission - Dragon Quest Style</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+    <!-- Scanline overlay for CRT effect -->
+    <div class="crt-overlay"></div>
+
+    <div id="app">
+        <!-- ==================== スタート画面（BGM再生トリガー） ==================== -->
+        <section id="screen-start" class="screen active" style="z-index: 500; justify-content: center; align-items: center; background: rgba(0,0,0,0.9);">
+            <div class="rpg-window message-window" style="text-align: center; cursor: pointer; padding: 40px;" onclick="App.startGame()">
+                <h1 class="main-title" style="margin-bottom: 20px; font-size: 2.5rem;">BIRTHDAY QUEST</h1>
+                <p class="tagline" style="animation: cursorBlink 1s infinite; font-size: 1.2rem; color: var(--text-highlight);">▶ がめんを タップして スタート ◀</p>
+            </div>
+        </section>
+
+        <!-- ==================== マップ画面 ==================== -->
+        <section id="screen-menu" class="screen">
+            <div class="menu-header rpg-window">
+                <div class="title-decoration">⚔</div>
+                <h1 class="main-title">BIRTHDAY QUEST</h1>
+                <p class="tagline">＊「まおうのしろを めざせ！」</p>
+                <div class="title-decoration">🛡</div>
+            </div>
+
+            <div class="map-container">
+                <!-- Animated stars in the sky area -->
+                <div class="map-sky">
+                    <div class="star" style="left:5%;top:8%;animation-delay:0s"></div>
+                    <div class="star" style="left:15%;top:15%;animation-delay:0.7s"></div>
+                    <div class="star" style="left:28%;top:5%;animation-delay:1.2s"></div>
+                    <div class="star" style="left:45%;top:12%;animation-delay:0.3s"></div>
+                    <div class="star" style="left:62%;top:8%;animation-delay:1.8s"></div>
+                    <div class="star" style="left:78%;top:18%;animation-delay:0.5s"></div>
+                    <div class="star" style="left:88%;top:6%;animation-delay:1.0s"></div>
+                    <div class="star" style="left:35%;top:22%;animation-delay:2.1s"></div>
+                    <div class="star" style="left:72%;top:3%;animation-delay:1.5s"></div>
+                    <div class="star" style="left:52%;top:20%;animation-delay:0.9s"></div>
+                </div>
+
+                <svg class="map-paths" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                    <!-- Road shadow -->
+                    <path class="map-line-shadow" d="M 150,455 L 400,255 L 650,455 L 850,155" />
+                    <!-- Main road -->
+                    <path class="map-line" d="M 150,450 L 400,250 L 650,450 L 850,150" />
+                    <!-- Road detail (dashed center line) -->
+                    <path class="map-line-detail" d="M 150,450 L 400,250 L 650,450 L 850,150" />
+                </svg>
+                
+                <div class="map-node" id="node-1" style="left: 15%; top: 75%;" onclick="App.selectStage(1)">
+                    <div class="node-glow"></div>
+                    <div class="node-icon">🏠</div>
+                    <div class="node-label">あのかおを さがせ</div>
+                </div>
+                
+                <div class="map-node" id="node-2" style="left: 40%; top: 41%;" onclick="App.selectStage(2)">
+                    <div class="node-glow"></div>
+                    <div class="node-icon">⛺</div>
+                    <div class="node-label">かおめん もぐらたたき</div>
+                </div>
+                
+                <div class="map-node" id="node-3" style="left: 65%; top: 75%;" onclick="App.selectStage(3)">
+                    <div class="node-glow"></div>
+                    <div class="node-icon">🏰</div>
+                    <div class="node-label">まやかしの シャッフル</div>
+                </div>
+                
+                <div class="map-node boss-node" id="node-4" style="left: 85%; top: 25%;" onclick="App.selectStage(4)">
+                    <div class="node-glow boss-glow"></div>
+                    <div class="node-icon">👿</div>
+                    <div class="node-label">まおうの ま</div>
+                </div>
+
+                <div id="player-avatar" class="player-avatar">
+                    <span class="avatar-char">勇</span>
+                </div>
+            </div>
+
+            <!-- Status Window -->
+            <div class="status-bar rpg-window">
+                <span>ゆうしゃ</span>
+                <span id="progress-text">LV 1　しんこう: 0 / 4</span>
+            </div>
+        </section>
+
+        <!-- ==================== ゲーム画面 (Stage 1-3) ==================== -->
+        <section id="screen-game" class="screen">
+            <div class="game-topbar">
+                <div class="rpg-window header-window">
+                    <div class="game-title-bar" id="game-title-bar">QUEST</div>
+                    <div class="game-score-bar" id="game-score-bar">0</div>
+                </div>
+                <div class="rpg-window command-window small-cmd">
+                    <div class="dq-cmd-item" onclick="App.backToMenu()">にげる</div>
+                </div>
+            </div>
+            
+            <div class="game-area rpg-window">
+                <canvas id="game-canvas"></canvas>
+            </div>
+            
+            <div class="rpg-window message-window" id="game-controls">
+                <p class="ctrl-hint">＊「メッセージがここにはいる」</p>
+            </div>
+        </section>
+
+        <!-- ==================== ボス・クイズ画面 (Stage 4) ==================== -->
+        <section id="screen-quiz" class="screen">
+            <div class="quiz-layout">
+                <div class="boss-graphic">
+                    <div class="boss-aura"></div>
+                    <span class="boss-emoji">👿</span>
+                </div>
+                
+                <div class="rpg-window quiz-question-window">
+                    <p id="quiz-q-text">もんだいぶんが ここに はいる</p>
+                </div>
+                
+                <div class="rpg-window quiz-choices-window" id="quiz-choices-container">
+                    <!-- JSで選択肢コマンド（▶）を生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== オーバーレイ: ステージクリア ==================== -->
+        <div id="overlay-clear" class="overlay">
+            <div class="rpg-window message-window overlay-msg clear-window">
+                <div class="clear-fanfare">🎉</div>
+                <p>＊「まものを やってみせた！<br>　　あたらしい みちが ひらかれた！」</p>
+                <div class="dq-cmd-item center-cmd mt-4" onclick="App.closeClear()">すすむ</div>
+            </div>
+        </div>
+
+        <!-- ==================== オーバーレイ: ゲームオーバー (クイズ・シャッフル失敗) ==================== -->
+        <div id="overlay-gameover" class="overlay">
+            <div class="rpg-window message-window overlay-msg gameover-window">
+                <div class="gameover-title">GAME OVER</div>
+                <p id="gameover-text">＊「おお ゆうしゃよ！<br>　　まちがえてしまうとは なにごとだ！」</p>
+                
+                <div class="cmd-list mt-4">
+                    <div class="dq-cmd-item" onclick="App.retryQuiz()">もういちど ちょうせんする</div>
+                    <div class="dq-cmd-item" onclick="App.backToMenu()">にげる</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== オーバーレイ: 祝・完全制覇 (Grand Reveal) ==================== -->
+        <div id="overlay-complete" class="overlay grand-overlay">
+            <div class="grand-particles" id="grand-particles"></div>
+            <div class="rpg-window message-window grand-reveal-msg">
+                <div class="chest-animation-container">
+                    <div class="chest-light" id="chest-light"></div>
+                    <div id="treasure-chest" class="treasure-chest">🎁</div>
+                </div>
+
+                <p id="complete-text">＊「まおうを うちたおした！<br>　　たからばこの ふういんが とける……！」</p>
+
+                <div class="complete-code" id="complete-code">
+                    <div class="cdigit" id="cdigit-1">?</div>
+                    <div class="cdigit" id="cdigit-2">?</div>
+                    <div class="cdigit" id="cdigit-3">?</div>
+                    <div class="cdigit" id="cdigit-4">?</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="audio.js?v=6"></script>
+    <script src="game.js?v=6"></script>
+</body>
+</html>
